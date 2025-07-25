@@ -1,0 +1,185 @@
+{
+  "summary": {
+    "title": "Three-Tier Web Application Template",
+    "description": "A template for a typical three-tier web application architecture including Web Browser, Web Server, Application Server, and Database."
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [
+      {
+        "id": "web-app-arch-1",
+        "title": "Three-Tier Web Application",
+        "diagramType": "Data Flow",
+        "placeholder": false,
+        "thumbnail": "",
+        "version": "2.0",
+        "description": "Standard three-tier web application architecture with presentation, logic, and data layers",
+        "cells": [
+          {
+            "id": "web-browser",
+            "position": { "x": 100, "y": 100 },
+            "size": { "width": 100, "height": 60 },
+            "type": "tm.Actor",
+            "name": "Web Browser",
+            "description": "End user's web browser accessing the application",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "web-server",
+            "position": { "x": 350, "y": 100 },
+            "size": { "width": 100, "height": 60 },
+            "type": "tm.Process",
+            "name": "Web Server",
+            "description": "Front-end web server handling HTTP requests and serving static content",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "app-server",
+            "position": { "x": 600, "y": 100 },
+            "size": { "width": 100, "height": 60 },
+            "type": "tm.Process",
+            "name": "Application Server",
+            "description": "Business logic layer processing application requests",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "database",
+            "position": { "x": 600, "y": 250 },
+            "size": { "width": 100, "height": 60 },
+            "type": "tm.Store",
+            "name": "Database",
+            "description": "Persistent data storage for the application",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "auth-service",
+            "position": { "x": 350, "y": 250 },
+            "size": { "width": 100, "height": 60 },
+            "type": "tm.Process",
+            "name": "Authentication Service",
+            "description": "Handles user authentication and session management",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "file-storage",
+            "position": { "x": 100, "y": 250 },
+            "size": { "width": 100, "height": 60 },
+            "type": "tm.Store",
+            "name": "File Storage",
+            "description": "Storage for static files, uploads, and assets",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-1",
+            "type": "tm.Flow",
+            "name": "User Requests",
+            "description": "HTTP/HTTPS requests from browser to web server",
+            "source": "web-browser",
+            "target": "web-server",
+            "isEncrypted": true,
+            "protocol": "HTTPS",
+            "isPublicNetwork": true,
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-2",
+            "type": "tm.Flow",
+            "name": "API Requests",
+            "description": "Web server forwards requests to application server",
+            "source": "web-server",
+            "target": "app-server",
+            "isEncrypted": true,
+            "protocol": "HTTPS/HTTP",
+            "isPublicNetwork": false,
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-3",
+            "type": "tm.Flow",
+            "name": "Database Queries",
+            "description": "Application server reads/writes data to database",
+            "source": "app-server",
+            "target": "database",
+            "isEncrypted": true,
+            "protocol": "TLS/SQL",
+            "isPublicNetwork": false,
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-4",
+            "type": "tm.Flow",
+            "name": "Authentication Requests",
+            "description": "Web server validates user credentials",
+            "source": "web-server",
+            "target": "auth-service",
+            "isEncrypted": true,
+            "protocol": "HTTPS/HTTP",
+            "isPublicNetwork": false,
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-5",
+            "type": "tm.Flow",
+            "name": "User Verification",
+            "description": "Authentication service verifies user data",
+            "source": "auth-service",
+            "target": "database",
+            "isEncrypted": true,
+            "protocol": "TLS/SQL",
+            "isPublicNetwork": false,
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-6",
+            "type": "tm.Flow",
+            "name": "Static Content",
+            "description": "Web server retrieves static files",
+            "source": "web-server",
+            "target": "file-storage",
+            "isEncrypted": false,
+            "protocol": "File I/O",
+            "isPublicNetwork": false,
+            "hasOpenThreats": false,
+            "threats": []
+          },
+          {
+            "id": "flow-7",
+            "type": "tm.Flow",
+            "name": "File Operations",
+            "description": "Application server reads/writes files",
+            "source": "app-server",
+            "target": "file-storage",
+            "isEncrypted": false,
+            "protocol": "File I/O",
+            "isPublicNetwork": false,
+            "hasOpenThreats": false,
+            "threats": []
+          }
+        ]
+      }
+    ]
+  }
+}

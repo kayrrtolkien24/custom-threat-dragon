@@ -1,0 +1,66 @@
+# Stage 1: Build the application
+# Use a Node.js version that matches Threat Dragon's requirements
+FROM node:18-alpine AS builder
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the application source code
+COPY . .
+
+# Install additional dependencies for our custom features
+RUN cd td.vue && npm install mermaid --save
+RUN cd td.server && npm install axios express-validator --save
+
+# Build the Vue.js front end for production
+RUN npm run build:vue
+RUN npm run build:server
+
+# Stage 2: Production image
+FROM node:18-alpine
+
+# Set environment variables (these will be overridden by actual env values)
+ENV NODE_ENV=production
+ENV PORT=3000
+# Jira integration environment variables (to be provided at runtime)
+ENV JIRA_BASE_URL=
+ENV JIRA_EMAIL=
+ENV JIRA_API_TOKEN=
+ENV JIRA_PROJECT_KEY=
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Copy built assets from builder stage
+COPY --from=builder /app/td.vue/dist ./td.vue/dist
+COPY --from=builder /app/td.server/dist ./td.server/dist
+
+# Copy node_modules
+COPY --from=builder /app/td.vue/node_modules ./td.vue/node_modules
+COPY --from=builder /app/td.server/node_modules ./td.server/node_modules
+
+# Copy server configuration files
+COPY ./td.server/config.js ./td.server/config.js
+COPY ./td.server/server.js ./td.server/server.js
+
+# Copy threat rule definitions including our enhanced rules
+COPY ./td.server/src/threats/rules ./td.server/src/threats/rules
+
+# Create directories for custom templates if they don't exist
+RUN mkdir -p ./td.vue/src/assets/templates
+
+# Copy our custom template files
+COPY ./td.vue/src/assets/templates/microservice-template.json ./td.vue/src/assets/templates/
+COPY ./td.vue/src/assets/templates/web-app-template.json ./td.vue/src/assets/templates/
+
+# Expose the port the server will run on
+EXPOSE 3000
+
+# Command to start the server in production mode
+CMD ["node", "td.server/server.js"]
