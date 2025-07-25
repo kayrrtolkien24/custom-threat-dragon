@@ -1,8 +1,8 @@
 <template>
   <b-navbar toggleable="lg" fixed="top" id="navbar">
     <b-navbar-brand :to="username ? '/dashboard' : '/'" class="td-brand">
-      <b-img src="@/assets/threatdragon_logo_image.svg" class="td-brand-img" alt="Threat Dragon Logo" />
-      Threat Dragon v{{this.$store.state.packageBuildVersion}}{{this.$store.state.packageBuildState}}
+      <b-img src="@/assets/kademos_logo_simple.svg" class="td-brand-img" alt="Kademos Custom Dragon Logo" />
+      Kademos Custom Dragon v{{this.$store.state.packageBuildVersion}}{{this.$store.state.packageBuildState}}
     </b-navbar-brand>
 
     <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
@@ -23,120 +23,88 @@
           ></font-awesome-icon>
         </b-nav-item>
         <b-nav-item
-          href="https://www.threatdragon.com/docs/"
+          href="https://github.com/kayrrtolkien24/custom-threat-dragon/blob/main/CUSTOM_FEATURES.md"
           target="_blank"
           rel="noopener noreferrer"
           id="nav-docs"
         >
           <font-awesome-icon
-            icon="question-circle"
+            icon="book"
             class="td-fa-nav"
-            v-b-tooltip.hover :title="$t('desktop.help.docs')"
-          ></font-awesome-icon>
-        </b-nav-item>
-        <b-nav-item
-          href="https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          id="nav-tm-cheat-sheet"
-        >
-          <font-awesome-icon
-            icon="gift"
-            class="td-fa-nav"
-            v-b-tooltip.hover :title="$t('desktop.help.sheets')"
+            v-b-tooltip.hover :title="$t('nav.documentation')"
           ></font-awesome-icon>
         </b-nav-item>
         <b-nav-item
           href="https://owasp.org/www-project-threat-dragon/"
           target="_blank"
           rel="noopener noreferrer"
-          id="nav-owasp-td"
+          id="nav-attribution"
+          v-b-tooltip.hover
+          title="Based on OWASP Threat Dragon"
         >
-          <b-img src="@/assets/owasp.svg" class="td-fa-nav td-owasp-logo" :title="$t('desktop.help.visit')"/>
+          <font-awesome-icon
+            icon="code-branch"
+            class="td-fa-nav"
+          ></font-awesome-icon>
+        </b-nav-item>
+        <b-nav-item
+          href="https://github.com/kayrrtolkien24/custom-threat-dragon/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          id="nav-issues"
+        >
+          <font-awesome-icon
+            icon="bug"
+            class="td-fa-nav"
+            v-b-tooltip.hover :title="$t('nav.issues')"
+          ></font-awesome-icon>
         </b-nav-item>
       </b-navbar-nav>
     </b-collapse>
   </b-navbar>
 </template>
 
-<style lang="scss" scoped>
-$icon-height: 1.2rem;
-
-.navbar {
-  background-color: $orange;
-  border-color: $orange-alt;
-  height: $header-height+10;
-  font-size: 15px;
-}
-
-.nav-link,
-.logged-in-as {
-  color: $white !important;
-}
-
-.logged-in-as {
-  margin-right: 10px;
-}
-
-.td-fa-nav {
-  font-size: $icon-height;
-  max-height: $icon-height;
-  margin: 0 5px 0 5px;
-}
-
-.td-brand {
-  color: $white !important;
-  .td-brand-img {
-    max-height: ($header-height - 10);
-  }
-}
-
-@media (max-width: 576px) { /* This is the typical breakpoint for phones */
-  .nav-link {
-  color: red !important;
-  }
-  .logged-in-as {
-    background-color: $orange;
-    border-radius: 5px;
-    padding:10px;
-  }
-}
-@media (max-width: 576px) {
-  .td-owasp-logo { /* Target the OWASP logo */
-    background-color: red;
-    border-radius: 50%;
-    padding: 5px;
-  }
-  }
-
-</style>
-
 <script>
 import { mapGetters } from 'vuex';
 
-import { LOGOUT } from '@/store/actions/auth.js';
 import TdLocaleSelect from './LocaleSelect.vue';
+import authActions from '@/store/actions/auth.js';
 
 export default {
-    name: 'TdNavbar',
-    components: {
-        TdLocaleSelect
-    },
-    computed: {
-        ...mapGetters([
-            'username'
-        ])
-    },
-    methods: {
-        onLogOut(evt) {
-            evt.preventDefault();
-            this.$store.dispatch(LOGOUT);
-            this.$router.push('/').catch(error => {
-                if (error.name != 'NavigationDuplicated') {
-                    throw error;
-                }
-            });
-        }
+  name: 'TdNavbar',
+  components: {
+    TdLocaleSelect
+  },
+  computed: {
+    ...mapGetters(['username'])
+  },
+  methods: {
+    onLogOut() {
+      this.$store.dispatch(authActions.logout);
     }
+  }
 };
 </script>
+
+<style lang="scss" scoped>
+.td-brand {
+  display: flex;
+  align-items: center;
+  color: $primary-color;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.td-brand-img {
+  max-height: 2rem;
+  margin-right: 0.5rem;
+}
+
+.td-fa-nav {
+  font-size: 1.5rem;
+}
+
+.logged-in-as {
+  padding: 0.5rem 1rem;
+}
+</style>
