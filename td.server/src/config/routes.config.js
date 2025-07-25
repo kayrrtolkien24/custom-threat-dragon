@@ -7,10 +7,13 @@ import googleProviderThreatmodelController from '../controllers/googleProviderTh
 import healthcheck from '../controllers/healthz.js';
 import homeController from '../controllers/homecontroller.js';
 import threatmodelController from '../controllers/threatmodelcontroller.js';
+import jiraRoutes from '../routes/jiraRoutes.js';
+import templatesController from '../controllers/templatesController.js';
+import threatAnalysisController from '../controllers/threatAnalysisController.js';
 
 /**
  * Routes that do **NOT** require authentication
- * Use with caution!!!!
+ * Use with caution!!!
  * @param {express.Router} router
  * @returns {express.Router}
  */
@@ -55,6 +58,16 @@ const routes = (router) => {
     router.post('/api/googleproviderthreatmodel/:folder/create', googleProviderThreatmodelController.create);
     router.put('/api/googleproviderthreatmodel/:file/update', googleProviderThreatmodelController.update);
     router.get('/api/googleproviderthreatmodel/:file/data', googleProviderThreatmodelController.model);
+
+    // Jira integration routes - require authentication
+    router.use('/api/jira', jiraRoutes);
+
+    // Architecture templates route
+    router.get('/api/templates', templatesController.getTemplates);
+
+    // Threat analysis routes
+    router.post('/api/threats/analyze', threatAnalysisController.analyzeDiagram);
+    router.get('/api/threats/engine/info', threatAnalysisController.getThreatEngineInfo);
 };
 
 const config = (app) => {

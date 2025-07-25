@@ -49,40 +49,24 @@
                             class="float-left"
                             :label="$t('threats.properties.status')"
                             label-for="status">
-                            <b-form-radio-group
+                            <b-form-select
                                 id="status"
                                 v-model="threat.status"
-                                :options="statuses"
-                                buttons
-                            ></b-form-radio-group>
+                                :options="statuses">
+                            </b-form-select>
                         </b-form-group>
                     </b-col>
-
-                    <b-col md=2>
-                        <b-form-group
-                            id="score-group"
-                            :label="$t('threats.properties.score')"
-                            label-for="score">
-                            <b-form-input
-                                id="score"
-                                v-model="threat.score"
-                                type="text"
-                            ></b-form-input>
-                        </b-form-group>
-                    </b-col>
-
-                    <b-col md=5>
+                    <b-col md=7>
                         <b-form-group
                             id="severity-group"
-                            class="float-right"
+                            class="float-left"
                             :label="$t('threats.properties.severity')"
                             label-for="severity">
-                            <b-form-radio-group
+                            <b-form-select
                                 id="severity"
                                 v-model="threat.severity"
-                                :options="priorities"
-                                buttons
-                            ></b-form-radio-group>
+                                :options="severities">
+                            </b-form-select>
                         </b-form-group>
                     </b-col>
                 </b-form-row>
@@ -96,8 +80,9 @@
                             <b-form-textarea
                                 id="description"
                                 v-model="threat.description"
-                                rows="5">
-                            </b-form-textarea>
+                                rows="3"
+                                max-rows="10"
+                            ></b-form-textarea>
                         </b-form-group>
                     </b-col>
                 </b-form-row>
@@ -111,8 +96,24 @@
                             <b-form-textarea
                                 id="mitigation"
                                 v-model="threat.mitigation"
-                                rows="5">
-                            </b-form-textarea>
+                                rows="3"
+                                max-rows="10"
+                            ></b-form-textarea>
+                        </b-form-group>
+                    </b-col>
+                </b-form-row>
+
+                <b-form-row>
+                    <b-col>
+                        <b-form-group
+                            id="modelname-group"
+                            :label="$t('threats.properties.modelname')"
+                            label-for="modelname">
+                            <b-form-input
+                                id="modelname"
+                                v-model="threat.modelType"
+                                type="text"
+                            ></b-form-input>
                         </b-form-group>
                     </b-col>
                 </b-form-row>
@@ -120,37 +121,37 @@
 
             <template #modal-footer>
                 <div class="w-100">
+                    <!-- Jira Integration Component -->
+                    <jira-integration
+                        :threat="threat"
+                        :model-name="modelName"
+                        :diagram-name="diagramName"
+                    ></jira-integration>
+                    
+                    <hr class="my-3" />
+                    
                 <b-button
                     v-if="!newThreat"
                     variant="danger"
                     class="float-left"
-                    @click="confirmDelete()"
+                    @click="confirmDelete"
                 >
                     {{ $t('forms.delete') }}
                 </b-button>
                 <b-button
-                    v-if="newThreat"
-                    variant="danger"
-                    class="float-left"
-                    @click="immediateDelete()"
-                >
-                    {{ $t('forms.remove') }}
-                </b-button>
-                 <b-button
-                    variant="secondary"
+                    variant="primary"
                     class="float-right"
-                    @click="updateThreat()"
+                    @click="saveThreat"
                 >
-                    {{ $t('forms.apply') }}
+                    {{ $t('forms.save') }}
                 </b-button>
                 <b-button
-                v-if="!newThreat"
-                variant="secondary"
-                class="float-right mr-2"
-                @click="hideModal()"
-            >
-                {{ $t('forms.cancel') }}
-            </b-button>
+                    variant="secondary"
+                    class="float-right mr-2"
+                    @click="hideModal()"
+                >
+                    {{ $t('forms.cancel') }}
+                </b-button>
                 </div>
             </template>
         </b-modal>
@@ -158,125 +159,115 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 
-import { CELL_DATA_UPDATED } from '@/store/actions/cell.js';
-import tmActions from '@/store/actions/threatmodel.js';
-import dataChanged from '@/service/x6/graph/data-changed.js';
-import threatModels from '@/service/threats/models/index.js';
+import { getModelTitle } from '@/service/threats/threat.service.js';
+import threatActions from '@/store/actions/threat.js';
+import JiraIntegration from '@/components/JiraIntegration.vue';
 
 export default {
-    name: 'TdThreatEditDialog',
-    computed: {
-        ...mapState({
-            cellRef: (state) => state.cell.ref,
-            threatTop: (state) => state.threatmodel.data.detail.threatTop
-        }),
-        threatTypes() {
-            if (!this.cellRef || !this.threat || !this.threat.modelType) {
-                return [];
-            }
-
-            const res = [];
-            const threatTypes = threatModels.getThreatTypesByElement(this.threat.modelType, this.cellRef.data.type);
-            Object.keys(threatTypes).forEach((type) => {
-                res.push(this.$t(type));
-            }, this);
-            if(!res.includes(this.threat.type))
-                res.push(this.threat.type);
-            return res;
+    name: 'ThreatEditDialog',
+    components: {
+        JiraIntegration
+    },
+    props: {
+        cellData: {
+            type: Object,
+            default: () => ({})
         },
-        statuses() {
-            return [
-                { value: 'NotApplicable', text: this.$t('threats.status.notApplicable') },
-                { value: 'Open', text: this.$t('threats.status.open') },
-                { value: 'Mitigated', text: this.$t('threats.status.mitigated') }
-            ];
+        diagramId: {
+            type: String,
+            default: ''
         },
-        priorities() {
-            return [
-                { value: 'TBD', text: this.$t('threats.severity.tbd') },
-                { value: 'Low', text: this.$t('threats.severity.low') },
-                { value: 'Medium', text: this.$t('threats.severity.medium') },
-                { value: 'High', text: this.$t('threats.severity.high') },
-                { value: 'Critical', text: this.$t('threats.severity.critical') }
-            ];
-        },
-        modalTitle() { return this.$t('threats.edit') + ' #' + this.number; }
+        newThreat: {
+            type: Boolean,
+            default: false
+        }
     },
     data() {
         return {
-            threat: {},
-            modelTypes: [
-                'CIA',
-                'CIADIE',
-                'LINDDUN',
-                'PLOT4ai',
-                'STRIDE'
-            ],
-            number: 0
+            threat: null,
+            threatTypes: [],
+            statuses: [],
+            severities: []
         };
     },
-    methods: {
-        editThreat(threatId,state) {
-            const crnthreat = this.cellRef.data.threats.find(x => x.id === threatId);
-            this.threat = {...crnthreat};
-            if (!this.threat) {
-                // this should never happen with a valid threatId
-                console.warn('Trying to access a non-existent threatId: ' + threatId);
-            } else {
-                this.number = this.threat.number;
-                this.newThreat = state==='new';
-                this.$refs.editModal.show();
-            }
+    computed: {
+        ...mapGetters([
+            'selectedThreat',
+            'threatTypes',
+            'threatStatuses',
+            'threatSeverities',
+            'selectedDiagram',
+            'threatModel'
+        ]),
+        modalTitle() {
+            return this.newThreat
+                ? this.$t('threats.newThreat')
+                : this.$t('threats.editThreat');
         },
-        updateThreat() {
-            const threatRef = this.cellRef.data.threats.find(x => x.id === this.threat.id);
-            if (threatRef) {
-                const objRef = this.cellRef.data;
-                if(!objRef.threatFrequency){
-                    const tmpfreq = threatModels.getFrequencyMapByElement(this.threat.modelType,this.cellRef.data.type);
-                    if(tmpfreq!==null)
-                        objRef.threatFrequency = tmpfreq;
-                }
-                if(objRef.threatFrequency){
-                    Object.keys(objRef.threatFrequency).forEach((k)=>{
-                        if(this.$t(`threats.model.${this.threat.modelType.toLowerCase()}.${k}`)===this.threat.type)
-                            objRef.threatFrequency[k]++;
-                    });
-                }
-                threatRef.status = this.threat.status;
-                threatRef.severity = this.threat.severity;
-                threatRef.title = this.threat.title;
-                threatRef.type = this.threat.type;
-                threatRef.description = this.threat.description;
-                threatRef.mitigation = this.threat.mitigation;
-                threatRef.modelType = this.threat.modelType;
-                threatRef.new = false;
-                threatRef.number = this.number;
-                threatRef.score = this.threat.score;
-                this.$store.dispatch(CELL_DATA_UPDATED, this.cellRef.data);
-                this.$store.dispatch(tmActions.modified);
-                dataChanged.updateStyleAttrs(this.cellRef);
+        // Get the model name for Jira integration
+        modelName() {
+            return this.threatModel?.summary?.title || '';
+        },
+        // Get the diagram name for Jira integration
+        diagramName() {
+            return this.selectedDiagram?.title || '';
+        }
+    },
+    watch: {
+        selectedThreat(val) {
+            if (val) {
+                this.threat = Object.assign({}, val);
+            }
+        }
+    },
+    mounted() {
+        this.threatTypes = this.threatTypes;
+        this.statuses = this.threatStatuses;
+        this.severities = this.threatSeverities;
+
+        if (this.newThreat) {
+            this.threat = {
+                id: this.cellData.id + '-' + Date.now(),
+                title: '',
+                type: this.threatTypes[0],
+                status: this.statuses[0],
+                severity: this.severities[0],
+                description: '',
+                mitigation: '',
+                modelType: getModelTitle(this.cellData)
+            };
+        } else {
+            this.threat = Object.assign({}, this.selectedThreat);
+        }
+    },
+    methods: {
+        hideModal() {
+            this.$refs.editModal.hide();
+        },
+        saveThreat() {
+            if (this.newThreat) {
+                this.$store.dispatch(threatActions.addThreat, {
+                    threat: this.threat,
+                    cellId: this.cellData.id,
+                    diagramId: this.diagramId
+                });
+            } else {
+                this.$store.dispatch(threatActions.updateThreat, {
+                    threat: this.threat,
+                    cellId: this.cellData.id,
+                    diagramId: this.diagramId
+                });
             }
             this.hideModal();
         },
         deleteThreat() {
-            if(!this.threat.new){
-                const threatMap = this.cellRef.data.threatFrequency;
-                Object.keys(threatMap).forEach((k)=>{
-                    if(this.$t(`threats.model.${this.threat.modelType.toLowerCase()}.${k}`)===this.threat.type)
-                        threatMap[k]--;
-                });
-            }
-            this.cellRef.data.threats = this.cellRef.data.threats.filter(x => x.id !== this.threat.id);
-            this.cellRef.data.hasOpenThreats = this.cellRef.data.threats.length > 0;
-            this.$store.dispatch(CELL_DATA_UPDATED, this.cellRef.data);
-            this.$store.dispatch(tmActions.modified);
-            dataChanged.updateStyleAttrs(this.cellRef);
-        },
-        hideModal() {
-            this.$refs.editModal.hide();
+            this.$store.dispatch(threatActions.removeThreat, {
+                threatId: this.threat.id,
+                cellId: this.cellData.id,
+                diagramId: this.diagramId
+            });
         },
         async confirmDelete() {
             const confirmed = await this.$bvModal.msgBoxConfirm(this.$t('threats.confirmDeleteMessage'), {
@@ -297,5 +288,4 @@ export default {
         }
     }
 };
-
 </script>

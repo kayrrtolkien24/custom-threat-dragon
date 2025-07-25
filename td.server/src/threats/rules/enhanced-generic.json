@@ -1,0 +1,259 @@
+{
+  "version": "2.0",
+  "name": "Enhanced Generic Threat Rules",
+  "description": "Comprehensive threat rules for identifying common security vulnerabilities in system architectures",
+  "rules": [
+    {
+      "rule": "Unencrypted Data Flow Over Public Network",
+      "matches": [
+        "and(isFlow, isPublicNetwork, not(isEncrypted))"
+      ],
+      "generates": {
+        "title": "Sensitive Data Exposure Through Unencrypted Channel",
+        "stride": "Information Disclosure",
+        "description": "Data is being transmitted over a public network without encryption. This could allow attackers to intercept and read sensitive information through network sniffing or man-in-the-middle attacks.",
+        "mitigation": "Implement TLS/SSL for all data flows over public networks. Ensure proper certificate validation and use modern cipher suites. Consider implementing certificate pinning for mobile applications to prevent MITM attacks."
+      }
+    },
+    {
+      "rule": "Unencrypted Data Flow to Database",
+      "matches": [
+        "and(isFlow, connects(isAnyProcess, isStore), not(isEncrypted))"
+      ],
+      "generates": {
+        "title": "Database Connection Without Encryption",
+        "stride": "Information Disclosure",
+        "description": "The connection between the application and the database is not encrypted. This could expose sensitive data if network traffic is intercepted, particularly in cloud or shared hosting environments.",
+        "mitigation": "Enable TLS/SSL for database connections. Configure the database to require encrypted connections. Store database credentials securely and use connection pooling with proper authentication."
+      }
+    },
+    {
+      "rule": "Missing Authentication for External Actor",
+      "matches": [
+        "and(isFlow, source(isActor), target(isProcess), not(hasProperty(authenticationScheme)))"
+      ],
+      "generates": {
+        "title": "Missing Authentication Mechanism",
+        "stride": "Spoofing",
+        "description": "External actors can access the system without proper authentication. This allows attackers to impersonate legitimate users and gain unauthorized access to the system.",
+        "mitigation": "Implement a robust authentication mechanism such as OAuth 2.0, OpenID Connect, or SAML. Use multi-factor authentication for sensitive operations. Ensure secure credential storage with proper password hashing (bcrypt/Argon2)."
+      }
+    },
+    {
+      "rule": "Missing Authentication Between Services",
+      "matches": [
+        "and(isFlow, source(isProcess), target(isProcess), not(hasProperty(authenticationScheme)))"
+      ],
+      "generates": {
+        "title": "Inter-Service Communication Without Authentication",
+        "stride": "Spoofing",
+        "description": "Services are communicating without mutual authentication. In a microservices architecture, this could allow an attacker to insert malicious services or intercept service-to-service communication.",
+        "mitigation": "Implement service-to-service authentication using mutual TLS (mTLS), API keys, or JWT tokens. Consider using a service mesh like Istio or Linkerd to manage authentication between services."
+      }
+    },
+    {
+      "rule": "Weak Access Control",
+      "matches": [
+        "and(isProcess, hasProperty(accessControl, weak))"
+      ],
+      "generates": {
+        "title": "Insufficient Access Control",
+        "stride": "Elevation of Privilege",
+        "description": "The system has weak or insufficient access controls. Users may be able to access functionality or data beyond their intended permissions.",
+        "mitigation": "Implement proper authorization using role-based access control (RBAC) or attribute-based access control (ABAC). Apply the principle of least privilege. Enforce authorization checks at both the UI and API layers."
+      }
+    },
+    {
+      "rule": "Direct Object Reference",
+      "matches": [
+        "and(isFlow, target(isStore), not(hasProperty(accessControl)))"
+      ],
+      "generates": {
+        "title": "Insecure Direct Object Reference",
+        "stride": "Elevation of Privilege",
+        "description": "The application may allow direct references to objects without proper access control checks. This could enable attackers to manipulate references to access unauthorized data.",
+        "mitigation": "Use indirect references that are mapped on the server side. Implement proper authorization checks before accessing any object. Validate that the authenticated user has permission to access the requested resource."
+      }
+    },
+    {
+      "rule": "Excessive Data Exposure",
+      "matches": [
+        "and(isFlow, source(isStore), target(isProcess), hasProperty(dataClassification, sensitive))"
+      ],
+      "generates": {
+        "title": "Excessive Data Exposure in API Response",
+        "stride": "Information Disclosure",
+        "description": "The API may expose more data than necessary, including sensitive information. This could lead to unintended data leakage.",
+        "mitigation": "Implement response filtering to ensure only necessary data is returned. Use Data Transfer Objects (DTOs) to control exactly what data is exposed. Consider implementing field-level access control for GraphQL APIs."
+      }
+    },
+    {
+      "rule": "Sensitive Data Storage",
+      "matches": [
+        "and(isStore, hasProperty(dataClassification, sensitive), not(hasProperty(encryption)))"
+      ],
+      "generates": {
+        "title": "Unencrypted Sensitive Data Storage",
+        "stride": "Information Disclosure",
+        "description": "Sensitive data is being stored without encryption. If the database is compromised, attackers can directly access this sensitive information.",
+        "mitigation": "Implement encryption at rest for sensitive data. Use column-level or tablespace encryption in the database. For highly sensitive data, consider using a Hardware Security Module (HSM) or key management service."
+      }
+    },
+    {
+      "rule": "Missing Rate Limiting",
+      "matches": [
+        "and(isProcess, isPublicFacing, not(hasProperty(rateLimiting)))"
+      ],
+      "generates": {
+        "title": "Missing Rate Limiting Controls",
+        "stride": "Denial of Service",
+        "description": "The application does not implement rate limiting. This makes it vulnerable to brute force attacks, credential stuffing, and denial of service attacks.",
+        "mitigation": "Implement rate limiting based on IP address, user account, or API key. Use token bucket or leaky bucket algorithms. Consider using a CDN or API gateway with built-in rate limiting capabilities."
+      }
+    },
+    {
+      "rule": "Resource Exhaustion Vulnerability",
+      "matches": [
+        "and(isProcess, hasProperty(resourceIntensive, true))"
+      ],
+      "generates": {
+        "title": "Resource Exhaustion Vulnerability",
+        "stride": "Denial of Service",
+        "description": "The system contains resource-intensive operations that could be exploited to exhaust system resources (CPU, memory, disk space, etc.), leading to denial of service.",
+        "mitigation": "Implement resource quotas and timeouts. Limit request size and processing time. Use asynchronous processing for resource-intensive operations. Consider implementing circuit breakers to prevent cascading failures."
+      }
+    },
+    {
+      "rule": "Missing Input Validation",
+      "matches": [
+        "and(isFlow, source(isActor), target(isProcess), not(hasProperty(inputValidation)))"
+      ],
+      "generates": {
+        "title": "Missing Input Validation",
+        "stride": "Tampering",
+        "description": "The application does not properly validate user input. This could lead to injection attacks (SQL, NoSQL, LDAP, XSS, etc.) or other forms of data manipulation.",
+        "mitigation": "Implement strict input validation using a whitelist approach. Validate data type, length, format, and range. Use parameterized queries for database operations. Consider using a Web Application Firewall (WAF) as an additional layer of defense."
+      }
+    },
+    {
+      "rule": "Client-Side Validation Only",
+      "matches": [
+        "and(isFlow, source(isActor), target(isProcess), hasProperty(inputValidation, clientSideOnly))"
+      ],
+      "generates": {
+        "title": "Reliance on Client-Side Validation",
+        "stride": "Tampering",
+        "description": "The application relies solely on client-side validation. Attackers can bypass this validation by modifying requests, potentially leading to injection attacks or data manipulation.",
+        "mitigation": "Always implement server-side validation regardless of client-side validation. Use a consistent validation approach across the application. Consider using validation libraries or frameworks to ensure consistent implementation."
+      }
+    },
+    {
+      "rule": "Missing Logging",
+      "matches": [
+        "and(isProcess, not(hasProperty(logging)))"
+      ],
+      "generates": {
+        "title": "Insufficient Logging and Monitoring",
+        "stride": "Repudiation",
+        "description": "The system does not implement adequate logging. This makes it difficult to detect and investigate security incidents or unauthorized activities.",
+        "mitigation": "Implement comprehensive logging for security-relevant events (authentication, authorization, data access). Include contextual information in logs (who, what, when, where). Ensure logs are stored securely and cannot be tampered with."
+      }
+    },
+    {
+      "rule": "Insecure Deserialization",
+      "matches": [
+        "and(isProcess, hasProperty(deserializesData, true))"
+      ],
+      "generates": {
+        "title": "Insecure Deserialization",
+        "stride": "Elevation of Privilege",
+        "description": "The application deserializes untrusted data without proper validation. This could allow attackers to execute arbitrary code or manipulate application logic.",
+        "mitigation": "Avoid deserializing data from untrusted sources if possible. Implement integrity checks (digital signatures) for serialized data. Use safer serialization formats (JSON, YAML) instead of native serialization. Consider using serialization libraries with security features."
+      }
+    },
+    {
+      "rule": "Cross-Site Request Forgery",
+      "matches": [
+        "and(isProcess, isWebApplication, not(hasProperty(csrfProtection)))"
+      ],
+      "generates": {
+        "title": "Cross-Site Request Forgery (CSRF) Vulnerability",
+        "stride": "Tampering",
+        "description": "The web application does not implement CSRF protections. This could allow attackers to trick users into performing unwanted actions while authenticated.",
+        "mitigation": "Implement anti-CSRF tokens for all state-changing operations. Use the SameSite cookie attribute. Consider implementing the Double Submit Cookie pattern or using framework-provided CSRF protections."
+      }
+    },
+    {
+      "rule": "Broken Authentication",
+      "matches": [
+        "and(isProcess, hasProperty(authenticationScheme, custom))"
+      ],
+      "generates": {
+        "title": "Potentially Broken Authentication",
+        "stride": "Spoofing",
+        "description": "The system uses a custom authentication scheme rather than proven standards. Custom implementations are prone to security flaws like weak password storage, session management issues, or credential recovery weaknesses.",
+        "mitigation": "Use established authentication frameworks and libraries instead of custom implementations. Follow OWASP Authentication Guidelines. Consider using OAuth 2.0, OpenID Connect, or SAML for federated authentication."
+      }
+    },
+    {
+      "rule": "External Service Dependency",
+      "matches": [
+        "and(isFlow, target(isProcess), target(isOutOfScope))"
+      ],
+      "generates": {
+        "title": "Unvalidated External Service",
+        "stride": "Denial of Service",
+        "description": "The system depends on an external service that is out of scope. If this service is compromised or unavailable, it could affect the functionality or security of the system.",
+        "mitigation": "Implement circuit breakers and fallback mechanisms. Validate responses from external services. Consider implementing retry policies with exponential backoff. Ensure proper error handling for external service failures."
+      }
+    },
+    {
+      "rule": "Excessive Permissions",
+      "matches": [
+        "and(isProcess, hasProperty(privileged, true))"
+      ],
+      "generates": {
+        "title": "Process Running with Excessive Privileges",
+        "stride": "Elevation of Privilege",
+        "description": "The process is running with higher privileges than necessary. If compromised, this could allow attackers to gain elevated access to the system.",
+        "mitigation": "Apply the principle of least privilege. Run processes with the minimum required permissions. Use containerization or sandboxing technologies to isolate processes. Consider implementing privilege separation for different components."
+      }
+    },
+    {
+      "rule": "Insecure File Upload",
+      "matches": [
+        "and(isProcess, hasProperty(fileUpload, true), not(hasProperty(fileValidation)))"
+      ],
+      "generates": {
+        "title": "Insecure File Upload",
+        "stride": "Elevation of Privilege",
+        "description": "The application allows file uploads without proper validation. This could lead to server-side attacks through malicious files or client-side attacks if uploaded content is served to other users.",
+        "mitigation": "Validate file type, size, and content. Rename files to prevent directory traversal. Store uploaded files outside the web root. Use a CDN or separate domain for serving user-uploaded content. Consider using virus scanning for uploaded files."
+      }
+    },
+    {
+      "rule": "API Without Versioning",
+      "matches": [
+        "and(isProcess, isAPI, not(hasProperty(apiVersioning)))"
+      ],
+      "generates": {
+        "title": "API Without Proper Versioning",
+        "stride": "Tampering",
+        "description": "The API does not implement proper versioning. This could lead to compatibility issues or security vulnerabilities when changes are made to the API.",
+        "mitigation": "Implement proper API versioning (URL path, query parameter, or header-based). Document API changes clearly. Consider using semantic versioning. Maintain backward compatibility or provide clear migration paths."
+      }
+    },
+    {
+      "rule": "Secrets in Configuration",
+      "matches": [
+        "and(isProcess, hasProperty(configurationManagement, insecure))"
+      ],
+      "generates": {
+        "title": "Secrets in Configuration Files",
+        "stride": "Information Disclosure",
+        "description": "Sensitive information like API keys, passwords, or tokens may be stored in configuration files. This could lead to secret exposure, especially in source code repositories.",
+        "mitigation": "Use environment variables or a secure secrets management solution (HashiCorp Vault, AWS Secrets Manager, etc.) for sensitive configuration. Never commit secrets to source control. Consider using runtime injection of secrets in containerized environments."
+      }
+    }
+  ]
+}
